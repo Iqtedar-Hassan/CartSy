@@ -68,6 +68,12 @@ public class RunAdsDialog extends JDialog {
         runBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         runBtn.setBorder(BorderFactory.createLineBorder(primary, 16, true));
 
+        JLabel errorLabel = new JLabel(" ");
+        errorLabel.setForeground(new Color(220, 0, 0));
+        errorLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        errorLabel.setPreferredSize(new Dimension(350, 40));
+
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
         mainPanel.add(runBtn);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
