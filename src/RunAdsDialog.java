@@ -86,4 +86,44 @@ public class RunAdsDialog extends JDialog {
                 errorLabel.setText("All fields are required!");
                 return;
             }
+             try {
+                int days = Integer.parseInt(daysStr);
+                try (Connection conn = DBConnection.getConnection()) {
+                    String query = "INSERT INTO ads (seller_id, ad_content, start_date, end_date, is_active) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), 1)";
+                    PreparedStatement ps = conn.prepareStatement(query);
+                    ps.setInt(1, sellerId);
+                    ps.setString(2, adContent);
+                    ps.setInt(3, days);
+                    ps.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Ad is now running!");
+                    dispose();
+                }
+            } catch (NumberFormatException ex) {
+                errorLabel.setText("Invalid days!");
+            } catch (Exception ex) {
+                errorLabel.setText("Error: " + ex.getMessage());
+            }
+        });
+
+        add(mainPanel);
+        pack();
+        setLocationRelativeTo(parent);
+        setVisible(true);
+    }
+
+    private JPanel labelAndField(String label, JTextField field) {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setOpaque(false);
+        JLabel l = new JLabel(label);
+        l.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        l.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        p.add(l);
+        p.add(field);
+        p.add(Box.createRigidArea(new Dimension(0, 7)));
+        return p;
+    }
+}
             
