@@ -2,8 +2,8 @@ import javax.swing.*;
 import java.awt.*;
 
 public class CustomerDashboard extends JFrame {
-    public CustomerDashboard(String name, int id) {
-        setTitle("Customer Dashboard - " + name);
+    public CustomerDashboard(String customerName, int customerId) {
+        setTitle("Customer Dashboard - " + customerName);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
 
@@ -25,12 +25,12 @@ public class CustomerDashboard extends JFrame {
         sidebar.setPreferredSize(new Dimension(270, getHeight()));
         sidebar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-          JLabel head = new JLabel("Customer Panel", SwingConstants.CENTER);
-        head.setForeground(Color.WHITE);
-        head.setFont(new Font("Arial", Font.BOLD, 29));
-        head.setAlignmentX(Component.CENTER_ALIGNMENT);
-        head.setBorder(BorderFactory.createEmptyBorder(28, 0, 32, 0));
-        leftBox.add(head);
+        JLabel title = new JLabel("Customer Panel", SwingConstants.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 30));
+        title.setForeground(Color.WHITE);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        title.setBorder(BorderFactory.createEmptyBorder(30, 0, 30, 0));
+        sidebar.add(title);
 
         String[] btnNames = {
             "View Catalog", "My Cart", "My Orders", "Chat with Seller", "See Ads", "Logout"
@@ -101,15 +101,13 @@ public class CustomerDashboard extends JFrame {
         add(contentPanel, BorderLayout.CENTER);
 
         // Button actions
-       arr[0].addActionListener(e -> new CustomerCatalogDialog(this, id));
-        arr[1].addActionListener(e -> new CustomerCartDialog(this, id));
-        arr[2].addActionListener(e -> new CustomerOrdersDialog(this, id));
-        arr[3].addActionListener(e -> new CustomerChatDialog(this, id));
-        arr[4].addActionListener(e -> new CustomerAdsDialog(this));
-        arr[5].addActionListener(e -> { dispose(); new MainMenu().setVisible(true); });
-
-        
-    dispose();
+        buttons[0].addActionListener(e -> new CustomerCatalogDialog(this, customerId)); // View Catalog
+        buttons[1].addActionListener(e -> new CustomerCartDialog(this, customerId)); // My Cart
+        buttons[2].addActionListener(e -> new CustomerOrdersDialog(this, customerId)); // My Orders
+        buttons[3].addActionListener(e -> new CustomerChatDialog(this, customerId)); // Chat with Seller
+        buttons[4].addActionListener(e -> new CustomerAdsDialog(this)); // See Ads
+        buttons[5].addActionListener(e -> { // Logout
+            dispose();
             new MainMenu().setVisible(true);
         });
         // You can implement My Orders, Chat, Ads similarly
