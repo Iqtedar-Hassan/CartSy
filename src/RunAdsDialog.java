@@ -86,7 +86,7 @@ public class RunAdsDialog extends JDialog {
                 errorLabel.setText("All fields are required!");
                 return;
             }
-             try {
+            try {
                 int days = Integer.parseInt(daysStr);
                 try (Connection conn = DBConnection.getConnection()) {
                     String query = "INSERT INTO ads (seller_id, ad_content, start_date, end_date, is_active) VALUES (?, ?, NOW(), DATE_ADD(NOW(), INTERVAL ? DAY), 1)";
@@ -126,4 +126,3 @@ public class RunAdsDialog extends JDialog {
         return p;
     }
 }
-            
