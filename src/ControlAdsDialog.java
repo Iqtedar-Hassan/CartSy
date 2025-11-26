@@ -5,6 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.table.DefaultTableModel;
 
+class ControlAdsDialog extends JDialog {
+    ControlAdsDialog(JFrame parent) {
+        super(parent, "Control Ads", true);
+        setUndecorated(true);
+
         Color primary = new Color(0, 153, 204);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
@@ -46,7 +51,7 @@ import javax.swing.table.DefaultTableModel;
 
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
-        String[] columns = {"Ad ID", "Seller Code",s"End Date", "Active"};
+        String[] columns = {"Ad ID", "Seller Code", "Content", "Start Date", "End Date", "Active"};
         DefaultTableModel model = new DefaultTableModel(columns, 0);
 
         try (Connection conn = DBConnection.getConnection()) {
@@ -56,25 +61,26 @@ import javax.swing.table.DefaultTableModel;
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 model.addRow(new Object[]{
+                    rs.getInt("ad_id"),
+                    rs.getString("seller_code"),
+                    rs.getString("ad_content"),
+                    rs.getDate("start_date"),
                     rs.getDate("end_date"),
-
-
                     rs.getBoolean("is_active") ? "Yes" : "No"
                 });
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-       
-       
         }
 
         JTable table = new JTable(model);
-
-
         JScrollPane scrollPane = new JScrollPane(table);
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);
+
         add(mainPanel);
+        pack();
+        setLocationRelativeTo(parent);
         setVisible(true);
     }
 }
