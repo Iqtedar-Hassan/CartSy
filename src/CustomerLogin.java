@@ -72,13 +72,25 @@ public class CustomerLogin extends JDialog {
         errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         errorLabel.setPreferredSize(new Dimension(350, 40));
 
+        // ---------------------------------------------
+        //           VALIDATION + LOGIN LOGIC
+        // ---------------------------------------------
         loginBtn.addActionListener(e -> {
             String email = emailField.getText();
             String pass = new String(passwordField.getPassword());
+
+            // Empty validation
             if (email.isEmpty() || pass.isEmpty()) {
                 errorLabel.setText("All fields required!");
                 return;
             }
+
+            // Email validation: letters + optional numbers + @gmail.com
+            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
+                errorLabel.setText("Invalid Email!");
+                return;
+            }
+
             try (Connection conn = DBConnection.getConnection()) {
                 String query = "SELECT * FROM users WHERE email=? AND password=? AND role='Customer'";
                 PreparedStatement ps = conn.prepareStatement(query);

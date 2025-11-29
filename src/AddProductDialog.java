@@ -161,5 +161,6 @@ public class AddProductDialog extends JDialog {
         p.add(l);
         p.add(field);
         p.add(Box.createRigidArea(new Dimension(0, 7)));
-        return p;}
+        return p;
+    }
 }
