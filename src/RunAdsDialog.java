@@ -82,10 +82,31 @@ public class RunAdsDialog extends JDialog {
         runBtn.addActionListener(e -> {
             String adContent = adContentField.getText().trim();
             String daysStr = daysField.getText().trim();
-            if (adContent.isEmpty() || daysStr.isEmpty()) {
-                errorLabel.setText("All fields are required!");
+
+            // --- FRONT-END VALIDATION ---
+
+            if (adContent.isEmpty()) {
+                errorLabel.setText("Ad content cannot be empty!");
                 return;
             }
+
+            // Ad content: letters and spaces only
+            if (!adContent.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Ad content must contain letters only!");
+                return;
+            }
+
+            if (daysStr.isEmpty()) {
+                errorLabel.setText("Days cannot be empty!");
+                return;
+            }
+
+            // Days: integer only
+            if (!daysStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Days must be a number!");
+                return;
+            }
+
             try {
                 int days = Integer.parseInt(daysStr);
                 try (Connection conn = DBConnection.getConnection()) {
@@ -99,8 +120,6 @@ public class RunAdsDialog extends JDialog {
                     JOptionPane.showMessageDialog(this, "Ad is now running!");
                     dispose();
                 }
-            } catch (NumberFormatException ex) {
-                errorLabel.setText("Invalid days!");
             } catch (Exception ex) {
                 errorLabel.setText("Error: " + ex.getMessage());
             }
@@ -123,6 +142,6 @@ public class RunAdsDialog extends JDialog {
         p.add(l);
         p.add(field);
         p.add(Box.createRigidArea(new Dimension(0, 7)));
-        return p;
+        return p; 
     }
 }
