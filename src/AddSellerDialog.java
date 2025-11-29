@@ -98,10 +98,43 @@ class AddSellerDialog extends JDialog {
             String fatherName = fatherNameField.getText().trim();
             String cnic = cnicField.getText().trim();
 
+            // -----------------------------
+            // VALIDATION ADDED
+            // -----------------------------
+
             if (name.isEmpty() || email.isEmpty() || username.isEmpty() || fatherName.isEmpty() || cnic.isEmpty()) {
                 errorLabel.setText("All fields are required!");
                 return;
             }
+
+            if (!name.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Name must contain only letters!");
+                return;
+            }
+
+            if (!fatherName.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Father's name must contain only letters!");
+                return;
+            }
+
+            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
+                errorLabel.setText("Invalid Gmail address!");
+                return;
+            }
+
+            if (!username.matches("^[A-Za-z]+$")) {
+                errorLabel.setText("Username must contain only letters!");
+                return;
+            }
+
+            if (!cnic.matches("^[0-9]{13}$")) {
+                errorLabel.setText("CNIC must be 13 digits only!");
+                return;
+            }
+
+            // -----------------------------
+            // ORIGINAL CODE CONTINUES
+            // -----------------------------
 
             String sellerId = "SELLER" + (1000 + new Random().nextInt(9000));
             String password = "pass" + (1000 + new Random().nextInt(9000));
@@ -140,7 +173,6 @@ class AddSellerDialog extends JDialog {
         setVisible(true);
     }
 
-    // Helper method for label and field with spacing
     private JPanel labelAndField(String label, JTextField field) {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
