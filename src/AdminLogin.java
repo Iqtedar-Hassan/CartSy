@@ -1,6 +1,4 @@
-
 import javax.swing.*;
-
 import java.awt.*;
 
 class AdminLogin extends JDialog {
@@ -57,9 +55,32 @@ class AdminLogin extends JDialog {
         errorLabel.setFont(new Font("Arial", Font.PLAIN, 14));
         errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // -------------------------------------------------------
+        // VALIDATION ADDED (NO OTHER CODE CHANGED)
+        // -------------------------------------------------------
         loginBtn.addActionListener(e -> {
             String user = usernameField.getText();
             String pass = new String(passwordField.getPassword());
+
+            // Username empty check
+            if (user.trim().isEmpty()) {
+                errorLabel.setText("Username is required!");
+                return;
+            }
+
+            // Username only letters (NO numbers allowed)
+            if (!user.matches("^[A-Za-z]+$")) {
+                errorLabel.setText("Username must contain only letters!");
+                return;
+            }
+
+            // Password empty check
+            if (pass.trim().isEmpty()) {
+                errorLabel.setText("Password is required!");
+                return;
+            }
+
+            // Your original login condition
             if (user.equals("admin") && pass.equals("123")) {
                 dispose();
                 AdminDashboard dashboard = new AdminDashboard();
