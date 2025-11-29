@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+
 public class SellerLogin extends JDialog {
     private int attempts = 0;
 
@@ -21,7 +22,7 @@ public class SellerLogin extends JDialog {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setPreferredSize(new Dimension(370, 350));
 
-        // Cross (close) button
+        // Close button
         JButton closeBtn = new JButton("X");
         closeBtn.setFocusPainted(false);
         closeBtn.setBorderPainted(false);
@@ -36,7 +37,6 @@ public class SellerLogin extends JDialog {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(Color.RED);
             }
-
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(primary);
             }
@@ -77,15 +77,26 @@ public class SellerLogin extends JDialog {
         errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         errorLabel.setPreferredSize(new Dimension(350, 40));
 
+        // LOGIN BUTTON ACTION
         loginBtn.addActionListener(e -> {
             String email = emailField.getText();
             String pass = new String(passwordField.getPassword());
             attempts++;
+
+            // ---------------------------
+            // FRONT-END EMAIL VALIDATION
+            // ---------------------------
+            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
+            errorLabel.setText("Please enter a valid email! ");
+         return;
+}
+
             if (attempts > 3) {
                 errorLabel.setText("Too many failed attempts!");
                 loginBtn.setEnabled(false);
                 return;
             }
+
             try (Connection conn = DBConnection.getConnection()) {
                 if (conn != null) {
                     String query = "SELECT * FROM users WHERE email=? AND password=? AND role='Seller'";
@@ -93,18 +104,21 @@ public class SellerLogin extends JDialog {
                     ps.setString(1, email);
                     ps.setString(2, pass);
                     ResultSet rs = ps.executeQuery();
+
                     if (rs.next()) {
                         int userId = rs.getInt("id");
                         String sellerName = rs.getString("name");
-                        // Fetch seller_id from sellers table
+
+                        // Get seller ID
                         String sellerQuery = "SELECT seller_id FROM sellers WHERE user_id = ?";
                         PreparedStatement sellerPs = conn.prepareStatement(sellerQuery);
                         sellerPs.setInt(1, userId);
                         ResultSet sellerRs = sellerPs.executeQuery();
+
                         if (sellerRs.next()) {
                             int sellerId = sellerRs.getInt("seller_id");
                             dispose();
-                            new SellerDashboard(sellerName, sellerId); // Only sellerId
+                            new SellerDashboard(sellerName, sellerId);
                             parent.dispose();
                         } else {
                             errorLabel.setText("Seller profile not found!");

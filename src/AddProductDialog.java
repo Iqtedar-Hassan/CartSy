@@ -49,7 +49,6 @@ public class AddProductDialog extends JDialog {
 
         topPanel.add(title, BorderLayout.WEST);
         topPanel.add(closeBtn, BorderLayout.EAST);
-
         mainPanel.add(topPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
@@ -96,13 +95,35 @@ public class AddProductDialog extends JDialog {
             String priceStr = priceField.getText().trim();
             String qtyStr = qtyField.getText().trim();
 
-            if (name.isEmpty() || desc.isEmpty() || priceStr.isEmpty() || qtyStr.isEmpty()) {
-                errorLabel.setText("All fields are required!");
+            // ---- VALIDATION -----
+
+            // Name: Only letters
+            if (!name.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Product name must contain letters only!");
                 return;
             }
 
+            // Description: Only letters & space
+            if (!desc.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Description must contain letters only!");
+                return;
+            }
+
+            // Price: Must be integer
+            if (!priceStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Price must be a number only!");
+                return;
+            }
+
+            // Quantity: Must be integer
+            if (!qtyStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Quantity must be a number only!");
+                return;
+            }
+
+            // If all validation passed:
             try {
-                double price = Double.parseDouble(priceStr);
+                int price = Integer.parseInt(priceStr);
                 int qty = Integer.parseInt(qtyStr);
 
                 try (Connection conn = DBConnection.getConnection()) {
@@ -111,15 +132,13 @@ public class AddProductDialog extends JDialog {
                     ps.setInt(1, sellerId);
                     ps.setString(2, name);
                     ps.setString(3, desc);
-                    ps.setDouble(4, price);
+                    ps.setInt(4, price);
                     ps.setInt(5, qty);
                     ps.executeUpdate();
 
-                    JOptionPane.showMessageDialog(this, "Product Added!");
+                    JOptionPane.showMessageDialog(this, "Product Added Successfully!");
                     dispose();
                 }
-            } catch (NumberFormatException ex) {
-                errorLabel.setText("Invalid price or quantity!");
             } catch (Exception ex) {
                 errorLabel.setText("Error: " + ex.getMessage());
             }
@@ -142,6 +161,5 @@ public class AddProductDialog extends JDialog {
         p.add(l);
         p.add(field);
         p.add(Box.createRigidArea(new Dimension(0, 7)));
-        return p;
-    }
+        return p;}
 }
