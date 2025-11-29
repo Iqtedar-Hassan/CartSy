@@ -1,10 +1,9 @@
-
-
 import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+
 
 public class UpdateProductDialog extends JDialog {
     public UpdateProductDialog(JFrame parent, int sellerId) {
@@ -22,7 +21,6 @@ public class UpdateProductDialog extends JDialog {
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setPreferredSize(new Dimension(400, 450));
 
-        // Top bar with title and close button
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
@@ -101,14 +99,41 @@ public class UpdateProductDialog extends JDialog {
             String priceStr = priceField.getText().trim();
             String qtyStr = qtyField.getText().trim();
 
-            if (productIdStr.isEmpty() || name.isEmpty() || desc.isEmpty() || priceStr.isEmpty() || qtyStr.isEmpty()) {
-                errorLabel.setText("All fields are required!");
+            // ---- FRONT-END VALIDATION -----
+
+            // Product ID must be integer
+            if (!productIdStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Product ID must be a number!");
+                return;
+            }
+
+            // Name: letters only
+            if (!name.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Name must contain letters only!");
+                return;
+            }
+
+            // Description: letters only
+            if (!desc.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Description must contain letters only!");
+                return;
+            }
+
+            // Price: integer only
+            if (!priceStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Price must be a number!");
+                return;
+            }
+
+            // Quantity: integer only
+            if (!qtyStr.matches("^[0-9]+$")) {
+                errorLabel.setText("Quantity must be a number!");
                 return;
             }
 
             try {
                 int productId = Integer.parseInt(productIdStr);
-                double price = Double.parseDouble(priceStr);
+                int price = Integer.parseInt(priceStr);
                 int qty = Integer.parseInt(qtyStr);
 
                 try (Connection conn = DBConnection.getConnection()) {
@@ -116,7 +141,7 @@ public class UpdateProductDialog extends JDialog {
                     PreparedStatement ps = conn.prepareStatement(query);
                     ps.setString(1, name);
                     ps.setString(2, desc);
-                    ps.setDouble(3, price);
+                    ps.setInt(3, price);
                     ps.setInt(4, qty);
                     ps.setInt(5, productId);
                     ps.setInt(6, sellerId);
@@ -128,8 +153,6 @@ public class UpdateProductDialog extends JDialog {
                         errorLabel.setText("Product not found or not yours!");
                     }
                 }
-            } catch (NumberFormatException ex) {
-                errorLabel.setText("Invalid product ID, price, or quantity!");
             } catch (Exception ex) {
                 errorLabel.setText("Error: " + ex.getMessage());
             }
