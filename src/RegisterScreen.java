@@ -2,14 +2,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class RegisterScreen extends JDialog {
+
     public RegisterScreen(JFrame parent) {
         super(parent, "Register", true);
         setUndecorated(true);
 
         Color primary = new Color(0, 153, 204);
+
         JPanel panel = new JPanel();
         panel.setBackground(Color.WHITE);
         panel.setBorder(BorderFactory.createCompoundBorder(
@@ -33,6 +36,7 @@ public class RegisterScreen extends JDialog {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(Color.RED);
             }
+
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(primary);
             }
@@ -47,6 +51,7 @@ public class RegisterScreen extends JDialog {
         title.setForeground(primary);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Input fields
         JTextField nameField = new JTextField();
         nameField.setMaximumSize(new Dimension(300, 38));
         nameField.setFont(new Font("Segoe UI", Font.PLAIN, 17));
@@ -62,11 +67,11 @@ public class RegisterScreen extends JDialog {
         passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 17));
         passwordField.setBorder(BorderFactory.createTitledBorder("Password"));
 
-        JComboBox<String> roleCombo = new JComboBox<>(new String[] {"Seller", "Customer"});
-        roleCombo.setMaximumSize(new Dimension(300, 38));
-        roleCombo.setFont(new Font("Segoe UI", Font.PLAIN, 17));
-        roleCombo.setBorder(BorderFactory.createTitledBorder("Role"));
+        // ---- FIX: REMOVE ROLE DROPDOWN ----
+        // User is automatically Customer
+        String role = "Customer";
 
+        // Register button
         JButton registerBtn = new JButton("Register");
         registerBtn.setFont(new Font("Segoe UI", Font.BOLD, 19));
         registerBtn.setBackground(primary);
@@ -77,43 +82,61 @@ public class RegisterScreen extends JDialog {
         registerBtn.setBorder(BorderFactory.createLineBorder(primary, 18, true));
         registerBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        // Error label
         JLabel errorLabel = new JLabel(" ");
         errorLabel.setForeground(new Color(220, 0, 0));
         errorLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
         errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         errorLabel.setPreferredSize(new Dimension(350, 40));
 
+        // ----------------------------
+        // REGISTER BUTTON LOGIC
+        // ----------------------------
         registerBtn.addActionListener(e -> {
             String name = nameField.getText().trim();
             String email = emailField.getText().trim();
             String pass = new String(passwordField.getPassword());
-            String role = roleCombo.getSelectedItem().toString();
 
+            // VALIDATION
             if (name.isEmpty() || email.isEmpty() || pass.isEmpty()) {
                 errorLabel.setText("All fields are required!");
                 return;
             }
 
+            if (!name.matches("^[A-Za-z ]+$")) {
+                errorLabel.setText("Name must contain only letters!");
+                return;
+            }
+
+            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
+                errorLabel.setText("Invalid email format!");
+                return;
+            }
+
             try (Connection conn = DBConnection.getConnection()) {
                 if (conn != null) {
+
+                    // NOTE: Seller registration REMOVED
+                    // Only Customer will be inserted
+
                     String query = "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
                     PreparedStatement ps = conn.prepareStatement(query);
                     ps.setString(1, name);
                     ps.setString(2, email);
                     ps.setString(3, pass);
-                    ps.setString(4, role);
+                    ps.setString(4, role);  // always "Customer"
                     ps.executeUpdate();
-                    JOptionPane.showMessageDialog(this, "Registration Successful!");
+
+                    JOptionPane.showMessageDialog(this, "Customer Registered Successfully!");
                     dispose();
                 }
             } catch (SQLException ex) {
                 ex.printStackTrace();
                 errorLabel.setText("Registration Failed! Email may already exist.");
-            } catch (Exception ss) {
-                errorLabel.setText("Error: " + ss.getMessage());
             }
         });
 
+        // ADD COMPONENTS
         panel.add(topPanel);
         panel.add(title);
         panel.add(Box.createRigidArea(new Dimension(0, 18)));
@@ -122,9 +145,7 @@ public class RegisterScreen extends JDialog {
         panel.add(emailField);
         panel.add(Box.createRigidArea(new Dimension(0, 12)));
         panel.add(passwordField);
-        panel.add(Box.createRigidArea(new Dimension(0, 12)));
-        panel.add(roleCombo);
-        panel.add(Box.createRigidArea(new Dimension(0, 18)));
+        panel.add(Box.createRigidArea(new Dimension(0, 20)));
         panel.add(registerBtn);
         panel.add(Box.createRigidArea(new Dimension(0, 12)));
         panel.add(errorLabel);
