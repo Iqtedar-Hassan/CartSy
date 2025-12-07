@@ -86,10 +86,10 @@ public class SellerLogin extends JDialog {
             // ---------------------------
             // FRONT-END EMAIL VALIDATION
             // ---------------------------
-            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
-            errorLabel.setText("Please enter a valid email! ");
-         return;
-}
+            if (!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                errorLabel.setText("Please enter a valid email!");
+                return;
+            }
 
             if (attempts > 3) {
                 errorLabel.setText("Too many failed attempts!");

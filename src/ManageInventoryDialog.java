@@ -1,9 +1,9 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import javax.swing.table.DefaultTableModel;
 
 public class ManageInventoryDialog extends JDialog {
     public ManageInventoryDialog(JFrame parent, int sellerId) {
@@ -20,6 +20,7 @@ public class ManageInventoryDialog extends JDialog {
         ));
         mainPanel.setPreferredSize(new Dimension(700, 440));
 
+        // ---------- TOP PANEL ----------
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
@@ -34,29 +35,33 @@ public class ManageInventoryDialog extends JDialog {
         closeBtn.setForeground(primary);
         closeBtn.setFont(new Font("Arial", Font.BOLD, 18));
         closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        closeBtn.setToolTipText("Close");
         closeBtn.addActionListener(e -> dispose());
+
         closeBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(Color.RED);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(primary);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { closeBtn.setForeground(Color.RED); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { closeBtn.setForeground(primary); }
         });
 
         topPanel.add(title, BorderLayout.WEST);
         topPanel.add(closeBtn, BorderLayout.EAST);
-
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
+        // ---------- TABLE ----------
         String[] columns = {"Product ID", "Name", "Quantity"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
+
+        // MAKE TABLE NON-EDITABLE
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // Disable editing
+            }
+        };
 
         try (Connection conn = DBConnection.getConnection()) {
             String query = "SELECT product_id, name, quantity FROM products WHERE seller_id=?";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, sellerId);
+
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 model.addRow(new Object[]{
@@ -70,16 +75,25 @@ public class ManageInventoryDialog extends JDialog {
         }
 
         JTable table = new JTable(model);
+
+        // BOLD TABLE HEADER
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         JScrollPane scrollPane = new JScrollPane(table);
 
+        // ---------- UPDATE PANEL ----------
         JPanel updatePanel = new JPanel();
         updatePanel.setLayout(new BoxLayout(updatePanel, BoxLayout.X_AXIS));
         updatePanel.setOpaque(false);
 
         JTextField productIdField = new JTextField();
         productIdField.setMaximumSize(new Dimension(100, 32));
+        productIdField.setEditable(false); // NOT EDITABLE
+
         JTextField qtyField = new JTextField();
         qtyField.setMaximumSize(new Dimension(100, 32));
+        qtyField.setEditable(true); // This should remain editable
+
         JButton updateBtn = new JButton("Update Quantity");
         updateBtn.setBackground(primary);
         updateBtn.setForeground(Color.WHITE);
@@ -99,47 +113,70 @@ public class ManageInventoryDialog extends JDialog {
         updatePanel.add(Box.createRigidArea(new Dimension(10, 0)));
         updatePanel.add(updateBtn);
 
+        // ---------- AUTO-FILL WHEN ROW CLICKED ----------
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow != -1) {
+                    productIdField.setText(model.getValueAt(selectedRow, 0).toString());
+                    qtyField.setText(model.getValueAt(selectedRow, 2).toString());
+                }
+            }
+        });
+
+        // ---------- BOTTOM PANEL ----------
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
         bottomPanel.setOpaque(false);
         bottomPanel.add(updatePanel);
         bottomPanel.add(errorLabel);
 
+        // Add everything
         mainPanel.add(scrollPane, BorderLayout.CENTER);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
+        // ---------- UPDATE BUTTON ACTION ----------
         updateBtn.addActionListener(e -> {
             String productIdStr = productIdField.getText().trim();
             String qtyStr = qtyField.getText().trim();
+
             if (productIdStr.isEmpty() || qtyStr.isEmpty()) {
                 errorLabel.setText("Both fields required!");
                 return;
             }
+
             try {
                 int productId = Integer.parseInt(productIdStr);
-                int qty = Integer.parseInt(qtyStr);
+                int newQty = Integer.parseInt(qtyStr);
+
                 try (Connection conn = DBConnection.getConnection()) {
-                    String query = "UPDATE products SET quantity=? WHERE product_id=? AND seller_id=?";
-                    PreparedStatement ps = conn.prepareStatement(query);
-                    ps.setInt(1, qty);
+                    String getOldQty = "SELECT quantity FROM products WHERE product_id=? AND seller_id=?";
+                    PreparedStatement getPs = conn.prepareStatement(getOldQty);
+                    getPs.setInt(1, productId);
+                    getPs.setInt(2, sellerId);
+                    ResultSet rs = getPs.executeQuery();
+
+                    if (!rs.next()) {
+                        errorLabel.setText("Product not found or not yours!");
+                        return;
+                    }
+
+                    int oldQty = rs.getInt("quantity");
+                    int diff = newQty - oldQty;
+
+                    String updateQuery = "UPDATE products SET quantity=? WHERE product_id=? AND seller_id=?";
+                    PreparedStatement ps = conn.prepareStatement(updateQuery);
+                    ps.setInt(1, newQty);
                     ps.setInt(2, productId);
                     ps.setInt(3, sellerId);
                     int rows = ps.executeUpdate();
+
                     if (rows > 0) {
-                        // Update the table model directly
-                        for (int i = 0; i < model.getRowCount(); i++) {
-                            if ((int) model.getValueAt(i, 0) == productId) {
-                                model.setValueAt(qty, i, 2); // Update quantity column
-                                break;
-                            }
-                        }
+                        model.setValueAt(newQty, table.getSelectedRow(), 2); // update UI
+                        errorLabel.setForeground(new Color(0, 120, 0));
                         errorLabel.setText("Quantity updated!");
-                    } else {
-                        errorLabel.setText("Product not found or not yours!");
                     }
                 }
-            } catch (NumberFormatException ex) {
-                errorLabel.setText("Invalid input!");
             } catch (Exception ex) {
                 errorLabel.setText("Error: " + ex.getMessage());
             }

@@ -2,9 +2,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.Random;
 
 class AddSellerDialog extends JDialog {
+
     AddSellerDialog(JFrame parent) {
         super(parent, "Add Seller", true);
         setUndecorated(true);
@@ -14,13 +16,13 @@ class AddSellerDialog extends JDialog {
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(primary, 2, true),
-            BorderFactory.createEmptyBorder(18, 28, 18, 28)
+                BorderFactory.createLineBorder(primary, 2, true),
+                BorderFactory.createEmptyBorder(18, 28, 18, 28)
         ));
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setPreferredSize(new Dimension(400, 460));
+        mainPanel.setPreferredSize(new Dimension(400, 480));
 
-        // Top bar with title and close button
+        // TOP BAR
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
@@ -29,29 +31,22 @@ class AddSellerDialog extends JDialog {
         title.setForeground(primary);
 
         JButton closeBtn = new JButton("X");
-        closeBtn.setFocusPainted(false);
-        closeBtn.setBorderPainted(false);
         closeBtn.setContentAreaFilled(false);
+        closeBtn.setBorderPainted(false);
         closeBtn.setForeground(primary);
         closeBtn.setFont(new Font("Arial", Font.BOLD, 18));
-        closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        closeBtn.setToolTipText("Close");
         closeBtn.addActionListener(e -> dispose());
         closeBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(Color.RED);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(primary);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { closeBtn.setForeground(Color.RED); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { closeBtn.setForeground(primary); }
         });
 
         topPanel.add(title, BorderLayout.WEST);
         topPanel.add(closeBtn, BorderLayout.EAST);
-
         mainPanel.add(topPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
+        // FIELDS
         JTextField nameField = new JTextField();
         JTextField emailField = new JTextField();
         JTextField usernameField = new JTextField();
@@ -75,11 +70,8 @@ class AddSellerDialog extends JDialog {
         addBtn.setFont(new Font("Segoe UI", Font.BOLD, 18));
         addBtn.setBackground(primary);
         addBtn.setForeground(Color.WHITE);
-        addBtn.setFocusPainted(false);
-        addBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         addBtn.setMaximumSize(new Dimension(200, 40));
         addBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        addBtn.setBorder(BorderFactory.createLineBorder(primary, 16, true));
 
         JLabel errorLabel = new JLabel(" ");
         errorLabel.setForeground(new Color(220, 0, 0));
@@ -91,18 +83,18 @@ class AddSellerDialog extends JDialog {
         mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         mainPanel.add(errorLabel);
 
+        // BUTTON LOGIC
         addBtn.addActionListener(e -> {
             String name = nameField.getText().trim();
+            String fatherName = fatherNameField.getText().trim();
             String email = emailField.getText().trim();
             String username = usernameField.getText().trim();
-            String fatherName = fatherNameField.getText().trim();
             String cnic = cnicField.getText().trim();
 
-            // -----------------------------
-            // VALIDATION ADDED
-            // -----------------------------
+            // ===== VALIDATION =====
 
-            if (name.isEmpty() || email.isEmpty() || username.isEmpty() || fatherName.isEmpty() || cnic.isEmpty()) {
+            if (name.isEmpty() || fatherName.isEmpty() || email.isEmpty() ||
+                    username.isEmpty() || cnic.isEmpty()) {
                 errorLabel.setText("All fields are required!");
                 return;
             }
@@ -113,35 +105,45 @@ class AddSellerDialog extends JDialog {
             }
 
             if (!fatherName.matches("^[A-Za-z ]+$")) {
-                errorLabel.setText("Father's name must contain only letters!");
+                errorLabel.setText("Father name must contain only letters!");
                 return;
             }
 
-            if (!email.matches("^[A-Za-z]+[0-9]+@gmail\\.com$")) {
-                errorLabel.setText("Invalid Gmail address!");
+            if (!email.matches("^[a-z]+[0-9]*@gmail\\.com$")) {
+                errorLabel.setText("Invalid Gmail format!");
                 return;
             }
 
-            if (!username.matches("^[A-Za-z]+$")) {
-                errorLabel.setText("Username must contain only letters!");
+            if (!username.matches("^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]+$")) {
+                errorLabel.setText("Username must contain letters + at least 1 number!");
                 return;
             }
 
             if (!cnic.matches("^[0-9]{13}$")) {
-                errorLabel.setText("CNIC must be 13 digits only!");
+                errorLabel.setText("CNIC must be exactly 13 digits!");
                 return;
             }
 
-            // -----------------------------
-            // ORIGINAL CODE CONTINUES
-            // -----------------------------
-
-            String sellerId = "SELLER" + (1000 + new Random().nextInt(9000));
-            String password = "pass" + (1000 + new Random().nextInt(9000));
-
             try (Connection conn = DBConnection.getConnection()) {
+
+                // ===== CHECK CNIC DUPLICATE =====
+                String checkCNIC = "SELECT id FROM users WHERE cnic = ?";
+                PreparedStatement checkStmt = conn.prepareStatement(checkCNIC);
+                checkStmt.setString(1, cnic);
+                ResultSet rsCheck = checkStmt.executeQuery();
+
+                if (rsCheck.next()) {
+                    errorLabel.setText("This CNIC is already used!");
+                    return;
+                }
+
+                // ===== INSERT USER =====
+                String sellerId = "SELLER" + (1000 + new Random().nextInt(9000));
+                String password = "pass" + (1000 + new Random().nextInt(9000));
+
                 String userQuery = "INSERT INTO users (name, email, password, role, username, father_name, cnic) VALUES (?, ?, ?, 'Seller', ?, ?, ?)";
                 PreparedStatement ps = conn.prepareStatement(userQuery, PreparedStatement.RETURN_GENERATED_KEYS);
+
                 ps.setString(1, name);
                 ps.setString(2, email);
                 ps.setString(3, password);
@@ -150,7 +152,7 @@ class AddSellerDialog extends JDialog {
                 ps.setString(6, cnic);
                 ps.executeUpdate();
 
-                java.sql.ResultSet rs = ps.getGeneratedKeys();
+                ResultSet rs = ps.getGeneratedKeys();
                 int userId = 0;
                 if (rs.next()) userId = rs.getInt(1);
 
@@ -162,6 +164,7 @@ class AddSellerDialog extends JDialog {
 
                 JOptionPane.showMessageDialog(this, "Seller Added!\nID: " + sellerId + "\nPassword: " + password);
                 dispose();
+
             } catch (Exception ex) {
                 errorLabel.setText("Error: " + ex.getMessage());
             }
@@ -177,13 +180,15 @@ class AddSellerDialog extends JDialog {
         JPanel p = new JPanel();
         p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
         p.setOpaque(false);
+
         JLabel l = new JLabel(label);
         l.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        l.setAlignmentX(Component.LEFT_ALIGNMENT);
         field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+
         p.add(l);
         p.add(field);
         p.add(Box.createRigidArea(new Dimension(0, 7)));
+
         return p;
     }
 }

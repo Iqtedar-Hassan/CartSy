@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 
 class ViewSalesDialog extends JDialog {
     ViewSalesDialog(JFrame parent) {
@@ -78,8 +79,12 @@ class ViewSalesDialog extends JDialog {
         }
 
         JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
 
+        // 🔹 Bold column headers
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JScrollPane scrollPane = new JScrollPane(table);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         add(mainPanel);

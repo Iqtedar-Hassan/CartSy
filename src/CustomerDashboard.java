@@ -33,7 +33,7 @@ public class CustomerDashboard extends JFrame {
         sidebar.add(title);
 
         String[] btnNames = {
-            "View Catalog", "My Cart", "My Orders", "Chat with Seller", "See Ads", "Logout"
+            "View Catalog", "Search Products", "My Cart", "Manage Addresses", "My Orders", "Chat with Seller", "Edit Profile", "See Ads", "Logout"
         };
 
         JButton[] buttons = new JButton[btnNames.length];
@@ -102,16 +102,14 @@ public class CustomerDashboard extends JFrame {
 
         // Button actions
         buttons[0].addActionListener(e -> new CustomerCatalogDialog(this, customerId)); // View Catalog
-        buttons[1].addActionListener(e -> new CustomerCartDialog(this, customerId)); // My Cart
-        buttons[2].addActionListener(e -> new CustomerOrdersDialog(this, customerId)); // My Orders
-        buttons[3].addActionListener(e -> new CustomerChatDialog(this, customerId)); // Chat with Seller
-        buttons[4].addActionListener(e -> new CustomerAdsDialog(this)); // See Ads
-        buttons[5].addActionListener(e -> { // Logout
-            dispose();
-            new MainMenu().setVisible(true);
-        });
-        // You can implement My Orders, Chat, Ads similarly
-        buttons[5].addActionListener(e -> {
+        buttons[1].addActionListener(e -> new SearchProductsDialog(this, customerId)); // Search Products
+        buttons[2].addActionListener(e -> new CustomerCartDialog(this, customerId)); // My Cart
+        buttons[3].addActionListener(e -> new ManageAddressesDialog(this, customerId)); // Manage Addresses
+        buttons[4].addActionListener(e -> new CustomerOrdersDialog(this, customerId)); // My Orders
+        buttons[5].addActionListener(e -> new SelectSellerChatDialog(this, customerId)); // Chat with Seller
+        buttons[6].addActionListener(e -> new EditCustomerProfileDialog(this, customerId)); // Edit Profile
+        buttons[7].addActionListener(e -> new CustomerAdsDialog(this)); // See Ads
+        buttons[8].addActionListener(e -> { // Logout
             dispose();
             new MainMenu().setVisible(true);
         });

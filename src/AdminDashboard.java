@@ -36,17 +36,18 @@ class AdminDashboard extends JFrame {
 
         String[] btnNames = {
                 "Add Seller", "Remove Seller", "Update Seller Tier",
-                "View Users", "View Sales", "Control Ads", "Back to Main Menu"
+                "Approve Sellers", "Manage Ads", "View Users", "View Sales", "Control Ads", "Back to Main Menu"
         };
         List<JButton> buttons = Arrays.asList(
                 new JButton(btnNames[0]), new JButton(btnNames[1]), new JButton(btnNames[2]),
-                new JButton(btnNames[3]), new JButton(btnNames[4]), new JButton(btnNames[5]), new JButton(btnNames[6]));
+                new JButton(btnNames[3]), new JButton(btnNames[4]), new JButton(btnNames[5]),
+                new JButton(btnNames[6]), new JButton(btnNames[7]), new JButton(btnNames[8]));
 
         for (int i = 0; i < buttons.size(); i++) {
             JButton btn = buttons.get(i);
             btn.setMaximumSize(new Dimension(220, 48));
             btn.setFont(new Font("Segoe UI", Font.BOLD, 18));
-            btn.setBackground(i == 6 ? new Color(220, 53, 69) : btnColor); // Red for "Back"
+            btn.setBackground(i == 8 ? new Color(220, 53, 69) : btnColor); // Red for "Back"
             btn.setForeground(Color.WHITE);
             btn.setFocusPainted(false);
             btn.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
@@ -59,12 +60,12 @@ class AdminDashboard extends JFrame {
             // Rounded corners and hover effect
             btn.addMouseListener(new java.awt.event.MouseAdapter() {
                 public void mouseEntered(java.awt.event.MouseEvent evt) {
-                    if (btn != buttons.get(6))
+                    if (btn != buttons.get(8))
                         btn.setBackground(btnHover);
                 }
 
                 public void mouseExited(java.awt.event.MouseEvent evt) {
-                    if (btn != buttons.get(6))
+                    if (btn != buttons.get(8))
                         btn.setBackground(btnColor);
                 }
             });
@@ -111,10 +112,12 @@ class AdminDashboard extends JFrame {
         buttons.get(0).addActionListener(e -> new AddSellerDialog(this));
         buttons.get(1).addActionListener(e -> new RemoveSellerDialog(this));
         buttons.get(2).addActionListener(e -> new UpdateSellerTierDialog(this));
-        buttons.get(3).addActionListener(e -> new ViewUsersDialog(this));
-        buttons.get(4).addActionListener(e -> new ViewSalesDialog(this));
-        buttons.get(5).addActionListener(e -> new ControlAdsDialog(this));
-        buttons.get(6).addActionListener(e -> {
+        buttons.get(3).addActionListener(e -> new ManageSellerApprovalDialog(this)); // Approve Sellers
+        buttons.get(4).addActionListener(e -> new AdminManageAdsDialog(this)); // Manage Ads
+        buttons.get(5).addActionListener(e -> new ViewUsersDialog(this));
+        buttons.get(6).addActionListener(e -> new ViewSalesDialog(this));
+        buttons.get(7).addActionListener(e -> new ControlAdsDialog(this));
+        buttons.get(8).addActionListener(e -> {
             dispose();
             new MainMenu().setVisible(true);
         });

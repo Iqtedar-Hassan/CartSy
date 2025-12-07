@@ -51,10 +51,10 @@ public class BillDialog extends JDialog {
                 while (itemsRs.next()) {
                     bill.append(itemsRs.getString("name"))
                         .append(" x").append(itemsRs.getInt("quantity"))
-                        .append(" @ ₹").append(itemsRs.getDouble("price"))
+                        .append(" @ PKR ").append(itemsRs.getDouble("price"))
                         .append("\n");
                 }
-                bill.append("\nTotal: ₹").append(rs.getDouble("total"));
+                bill.append("\nTotal: PKR ").append(rs.getDouble("total"));
                 billArea.setText(bill.toString());
             }
         } catch (Exception ex) {

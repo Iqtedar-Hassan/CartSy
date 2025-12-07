@@ -73,7 +73,7 @@ public class CustomerCatalogDialog extends JDialog {
                 nameLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
                 nameLabel.setForeground(primary);
 
-                JLabel priceLabel = new JLabel("₹" + price);
+                JLabel priceLabel = new JLabel("PKR " + price);
                 priceLabel.setFont(new Font("Segoe UI", Font.BOLD, 16));
                 priceLabel.setForeground(new Color(0, 120, 0));
 

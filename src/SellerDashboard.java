@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.sql.*;
 
 public class SellerDashboard extends JFrame {
     public SellerDashboard(String sellerName, int sellerId) {
@@ -43,7 +44,7 @@ public class SellerDashboard extends JFrame {
             JButton btn = new JButton(btnNames[i]);
             btn.setMaximumSize(new Dimension(220, 48));
             btn.setFont(new Font("Segoe UI", Font.BOLD, 18));
-            btn.setBackground(i == btnNames.length - 1 ? new Color(220, 53, 69) : btnColor); // Red for "Logout"
+            btn.setBackground(i == buttons.length - 1 ? new Color(220, 53, 69) : btnColor); // Red for "Logout"
             btn.setForeground(Color.WHITE);
             btn.setFocusPainted(false);
             btn.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
@@ -102,15 +103,40 @@ public class SellerDashboard extends JFrame {
         add(sidebar, BorderLayout.WEST);
         add(contentPanel, BorderLayout.CENTER);
 
-        // Button actions (pass only sellerId)
+        // Button actions
         buttons[0].addActionListener(e -> new AddProductDialog(this, sellerId));
         buttons[1].addActionListener(e -> new ViewMyProductsDialog(this, sellerId));
         buttons[2].addActionListener(e -> new UpdateProductDialog(this, sellerId));
-        buttons[3].addActionListener(e -> new DeleteProductDialog(this, sellerId));
+        buttons[3].addActionListener(e -> new DeleteProductDialog(this, sellerId)); //error after pasting gpt code of DeleteProductDialogue
         buttons[4].addActionListener(e -> new ManageInventoryDialog(this, sellerId));
         buttons[5].addActionListener(e -> new SalesAnalyticsDialog(this, sellerId));
         buttons[6].addActionListener(e -> new RunAdsDialog(this, sellerId));
-        buttons[7].addActionListener(e -> new SellerChatDialog(this, sellerId));
+
+        // FIXED Chat button: fetch user_id first
+        buttons[7].addActionListener(e -> {
+            int userId = 0;
+            try (Connection conn = DBConnection.getConnection()) {
+                String sql = "SELECT user_id FROM sellers WHERE seller_id = ?";
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setInt(1, sellerId);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    userId = rs.getInt("user_id");
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Failed to get seller user ID!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (userId != 0) {
+                new ChatDialog(this, userId, "Seller");
+            } else {
+                JOptionPane.showMessageDialog(this, "Seller user ID not found!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Logout
         buttons[8].addActionListener(e -> {
             dispose();
             new MainMenu().setVisible(true);

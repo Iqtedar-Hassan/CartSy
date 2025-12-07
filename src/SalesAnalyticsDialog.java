@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import javax.swing.table.DefaultTableModel;
 
 public class SalesAnalyticsDialog extends JDialog {
+
     public SalesAnalyticsDialog(JFrame parent, int sellerId) {
         super(parent, "Sales Analytics", true);
         setUndecorated(true);
@@ -40,6 +41,7 @@ public class SalesAnalyticsDialog extends JDialog {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(Color.RED);
             }
+
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(primary);
             }
@@ -50,8 +52,17 @@ public class SalesAnalyticsDialog extends JDialog {
 
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
+        // --------------------------------------------------------
+        //     NON EDITABLE MODEL  ✔
+        // --------------------------------------------------------
         String[] columns = {"Sale ID", "Product", "Quantity", "Total Price", "Date"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
+
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;   // <-- MAKES TABLE NOT EDITABLE
+            }
+        };
 
         try (Connection conn = DBConnection.getConnection()) {
             String query = "SELECT s.sale_id, p.name AS product, s.quantity, s.total_price, s.sale_date " +
@@ -75,6 +86,10 @@ public class SalesAnalyticsDialog extends JDialog {
         }
 
         JTable table = new JTable(model);
+
+        // --- Make column headers bold ---
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         JScrollPane scrollPane = new JScrollPane(table);
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);

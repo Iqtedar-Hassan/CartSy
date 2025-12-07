@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 
 public class ViewMyProductsDialog extends JDialog {
+
     public ViewMyProductsDialog(JFrame parent, int sellerId) {
         super(parent, "My Products", true);
         setUndecorated(true);
@@ -15,11 +17,12 @@ public class ViewMyProductsDialog extends JDialog {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(primary, 2, true),
-            BorderFactory.createEmptyBorder(18, 18, 18, 18)
+                BorderFactory.createLineBorder(primary, 2, true),
+                BorderFactory.createEmptyBorder(18, 18, 18, 18)
         ));
         mainPanel.setPreferredSize(new Dimension(700, 400));
 
+        // ---------- TOP PANEL ----------
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
 
@@ -35,14 +38,11 @@ public class ViewMyProductsDialog extends JDialog {
         closeBtn.setFont(new Font("Arial", Font.BOLD, 18));
         closeBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         closeBtn.setToolTipText("Close");
+
         closeBtn.addActionListener(e -> dispose());
         closeBtn.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(Color.RED);
-            }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                closeBtn.setForeground(primary);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { closeBtn.setForeground(Color.RED); }
+            public void mouseExited(java.awt.event.MouseEvent evt) { closeBtn.setForeground(primary); }
         });
 
         topPanel.add(title, BorderLayout.WEST);
@@ -50,21 +50,29 @@ public class ViewMyProductsDialog extends JDialog {
 
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
+        // ---------- TABLE MODEL (NON-EDITABLE) ----------
         String[] columns = {"Product ID", "Name", "Description", "Price", "Quantity"};
-        DefaultTableModel model = new DefaultTableModel(columns, 0);
+
+        DefaultTableModel model = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false; // <---- CELLS CANNOT BE EDITED
+            }
+        };
 
         try (Connection conn = DBConnection.getConnection()) {
             String query = "SELECT product_id, name, description, price, quantity FROM products WHERE seller_id=?";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, sellerId);
+
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
                 model.addRow(new Object[]{
-                    rs.getInt("product_id"),
-                    rs.getString("name"),
-                    rs.getString("description"),
-                    rs.getDouble("price"),
-                    rs.getInt("quantity")
+                        rs.getInt("product_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        rs.getDouble("price"),
+                        rs.getInt("quantity")
                 });
             }
         } catch (Exception ex) {
@@ -72,8 +80,12 @@ public class ViewMyProductsDialog extends JDialog {
         }
 
         JTable table = new JTable(model);
-        JScrollPane scrollPane = new JScrollPane(table);
 
+        // --------- MAKE COLUMN HEADERS BOLD ---------
+        JTableHeader header = table.getTableHeader();
+        header.setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JScrollPane scrollPane = new JScrollPane(table);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         add(mainPanel);

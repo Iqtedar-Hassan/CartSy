@@ -75,7 +75,7 @@ public class CustomerOrdersDialog extends JDialog {
                          .append("; ");
                 }
 
-                model.addRow(new Object[]{orderId, date, "Pkr " + total, payment, items.toString()});
+                model.addRow(new Object[]{orderId, date, "PKR " + total, payment, items.toString()});
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
@@ -83,6 +83,10 @@ public class CustomerOrdersDialog extends JDialog {
 
         JTable table = new JTable(model);
         table.setRowHeight(28);
+
+        // Make table header bold
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
         JScrollPane scrollPane = new JScrollPane(table);
 
         mainPanel.add(scrollPane, BorderLayout.CENTER);

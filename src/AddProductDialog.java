@@ -3,7 +3,6 @@ import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Random;
 
 public class AddProductDialog extends JDialog {
     public AddProductDialog(JFrame parent, int sellerId) {
@@ -15,8 +14,8 @@ public class AddProductDialog extends JDialog {
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(Color.WHITE);
         mainPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(primary, 2, true),
-            BorderFactory.createEmptyBorder(18, 28, 18, 28)
+                BorderFactory.createLineBorder(primary, 2, true),
+                BorderFactory.createEmptyBorder(18, 28, 18, 28)
         ));
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
         mainPanel.setPreferredSize(new Dimension(400, 390));
@@ -95,17 +94,17 @@ public class AddProductDialog extends JDialog {
             String priceStr = priceField.getText().trim();
             String qtyStr = qtyField.getText().trim();
 
-            // ---- VALIDATION -----
+            // ---- UPDATED VALIDATION -----
 
-            // Name: Only letters
-            if (!name.matches("^[A-Za-z ]+$")) {
-                errorLabel.setText("Product name must contain letters only!");
+            // Product name: must include letters, digits optional, NO symbols
+            if (!name.matches("^[A-Za-z0-9 ]*[A-Za-z][A-Za-z0-9 ]*$")) {
+                errorLabel.setText("Product name must include letters (numbers optional)!");
                 return;
             }
 
-            // Description: Only letters & space
-            if (!desc.matches("^[A-Za-z ]+$")) {
-                errorLabel.setText("Description must contain letters only!");
+            // Description: must include letters, digits + symbols allowed
+            if (!desc.matches("^[A-Za-z0-9 ,._\\-+()!?:;/]*[A-Za-z][A-Za-z0-9 ,._\\-+()!?:;/]*$")) {
+                errorLabel.setText("Description must include letters (symbols allowed)!");
                 return;
             }
 
@@ -121,22 +120,32 @@ public class AddProductDialog extends JDialog {
                 return;
             }
 
-            // If all validation passed:
             try {
-                int price = Integer.parseInt(priceStr);
+                double price = Double.parseDouble(priceStr);
                 int qty = Integer.parseInt(qtyStr);
 
                 try (Connection conn = DBConnection.getConnection()) {
                     String query = "INSERT INTO products (seller_id, name, description, price, quantity) VALUES (?, ?, ?, ?, ?)";
-                    PreparedStatement ps = conn.prepareStatement(query);
+                    PreparedStatement ps = conn.prepareStatement(query, PreparedStatement.RETURN_GENERATED_KEYS);
                     ps.setInt(1, sellerId);
                     ps.setString(2, name);
                     ps.setString(3, desc);
-                    ps.setInt(4, price);
+                    ps.setDouble(4, price);
                     ps.setInt(5, qty);
                     ps.executeUpdate();
 
-                    JOptionPane.showMessageDialog(this, "Product Added Successfully!");
+                    // Track inventory addition
+                    ResultSet rs = ps.getGeneratedKeys();
+                    if (rs.next()) {
+                        int productId = rs.getInt(1);
+                        String inventoryQuery = "INSERT INTO inventory (product_id, change_type, quantity) VALUES (?, 'add', ?)";
+                        PreparedStatement invPs = conn.prepareStatement(inventoryQuery);
+                        invPs.setInt(1, productId);
+                        invPs.setInt(2, qty);
+                        invPs.executeUpdate();
+                    }
+
+                    JOptionPane.showMessageDialog(this, "Product Added!");
                     dispose();
                 }
             } catch (Exception ex) {

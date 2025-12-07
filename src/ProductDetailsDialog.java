@@ -83,7 +83,7 @@ public class ProductDetailsDialog extends JDialog {
             if (rs.next()) {
                 nameLabel.setText(rs.getString("name"));
                 descLabel.setText("<html><div style='width:320px'>" + rs.getString("description") + "</div></html>");
-                priceLabel.setText("₹" + rs.getDouble("price"));
+                priceLabel.setText("PKR " + rs.getDouble("price"));
                 qtyLabel.setText("Available: " + rs.getInt("quantity"));
             }
         } catch (Exception ex) {
@@ -92,15 +92,41 @@ public class ProductDetailsDialog extends JDialog {
 
         addToCartBtn.addActionListener(e -> {
             try (Connection conn = DBConnection.getConnection()) {
-                String check = "SELECT * FROM cart WHERE customer_id=? AND product_id=?";
+                // FIX #3: Check stock availability before adding to cart
+                String stockCheck = "SELECT quantity FROM products WHERE product_id=?";
+                PreparedStatement stockPs = conn.prepareStatement(stockCheck);
+                stockPs.setInt(1, productId);
+                ResultSet stockRs = stockPs.executeQuery();
+                
+                if (stockRs.next()) {
+                    int availableQty = stockRs.getInt("quantity");
+                    if (availableQty < 1) {
+                        statusLabel.setText("Out of stock!");
+                        return;
+                    }
+                } else {
+                    statusLabel.setText("Product not found!");
+                    return;
+                }
+                
+                // FIX #6: Check if already in cart and increment quantity
+                String check = "SELECT quantity FROM cart WHERE customer_id=? AND product_id=?";
                 PreparedStatement ps = conn.prepareStatement(check);
                 ps.setInt(1, customerId);
                 ps.setInt(2, productId);
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
-                    statusLabel.setText("Already in cart!");
+                    // Product already in cart - increment quantity
+                    String update = "UPDATE cart SET quantity = quantity + 1 WHERE customer_id=? AND product_id=?";
+                    PreparedStatement updatePs = conn.prepareStatement(update);
+                    updatePs.setInt(1, customerId);
+                    updatePs.setInt(2, productId);
+                    updatePs.executeUpdate();
+                    statusLabel.setForeground(new Color(0, 120, 0));
+                    statusLabel.setText("Cart quantity updated!");
                     return;
                 }
+                // Product not in cart - add it
                 String insert = "INSERT INTO cart (customer_id, product_id, quantity) VALUES (?, ?, 1)";
                 ps = conn.prepareStatement(insert);
                 ps.setInt(1, customerId);
