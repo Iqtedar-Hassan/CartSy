@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-
 public class SellerLogin extends JDialog {
     private int attempts = 0;
 
@@ -79,14 +78,22 @@ public class SellerLogin extends JDialog {
 
         // LOGIN BUTTON ACTION
         loginBtn.addActionListener(e -> {
-            String email = emailField.getText();
-            String pass = new String(passwordField.getPassword());
+            String email = emailField.getText().trim();
+            String pass = new String(passwordField.getPassword()).trim();
             attempts++;
+
+            // ---------------------------
+            // ALL FIELDS REQUIRED VALIDATION
+            // ---------------------------
+            if (email.isEmpty() || pass.isEmpty()) {
+                errorLabel.setText("All fields are required!");
+                return;
+            }
 
             // ---------------------------
             // FRONT-END EMAIL VALIDATION
             // ---------------------------
-            if (!email.matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            if (!email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$")) {
                 errorLabel.setText("Please enter a valid email!");
                 return;
             }
@@ -109,17 +116,22 @@ public class SellerLogin extends JDialog {
                         int userId = rs.getInt("id");
                         String sellerName = rs.getString("name");
 
-                        // Get seller ID
-                        String sellerQuery = "SELECT seller_id FROM sellers WHERE user_id = ?";
+                        // Get seller ID and check approval
+                        String sellerQuery = "SELECT seller_id, is_approved FROM sellers WHERE user_id = ?";
                         PreparedStatement sellerPs = conn.prepareStatement(sellerQuery);
                         sellerPs.setInt(1, userId);
                         ResultSet sellerRs = sellerPs.executeQuery();
 
                         if (sellerRs.next()) {
-                            int sellerId = sellerRs.getInt("seller_id");
-                            dispose();
-                            new SellerDashboard(sellerName, sellerId);
-                            parent.dispose();
+                            boolean isApproved = sellerRs.getBoolean("is_approved");
+                            if (isApproved) {
+                                int sellerId = sellerRs.getInt("seller_id");
+                                dispose();
+                                new SellerDashboard(sellerName, sellerId);
+                                parent.dispose();
+                            } else {
+                                errorLabel.setText("Your account is not approved yet!");
+                            }
                         } else {
                             errorLabel.setText("Seller profile not found!");
                         }

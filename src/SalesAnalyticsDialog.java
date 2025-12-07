@@ -1,9 +1,7 @@
 import javax.swing.*;
-import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.sql.*;
 
 public class SalesAnalyticsDialog extends JDialog {
 
@@ -19,7 +17,7 @@ public class SalesAnalyticsDialog extends JDialog {
                 BorderFactory.createLineBorder(primary, 2, true),
                 BorderFactory.createEmptyBorder(18, 18, 18, 18)
         ));
-        mainPanel.setPreferredSize(new Dimension(700, 400));
+        mainPanel.setPreferredSize(new Dimension(800, 400)); // Slightly wider for address
 
         JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
@@ -41,7 +39,6 @@ public class SalesAnalyticsDialog extends JDialog {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(Color.RED);
             }
-
             public void mouseExited(java.awt.event.MouseEvent evt) {
                 closeBtn.setForeground(primary);
             }
@@ -53,21 +50,23 @@ public class SalesAnalyticsDialog extends JDialog {
         mainPanel.add(topPanel, BorderLayout.NORTH);
 
         // --------------------------------------------------------
-        //     NON EDITABLE MODEL  ✔
+        // NON EDITABLE MODEL  ✔
         // --------------------------------------------------------
-        String[] columns = {"Sale ID", "Product", "Quantity", "Total Price", "Date"};
+        String[] columns = {"Sale ID", "Product", "Quantity", "Total Price", "Date", "Address"};
 
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;   // <-- MAKES TABLE NOT EDITABLE
+                return false; // <-- MAKES TABLE NOT EDITABLE
             }
         };
 
         try (Connection conn = DBConnection.getConnection()) {
-            String query = "SELECT s.sale_id, p.name AS product, s.quantity, s.total_price, s.sale_date " +
+            String query = "SELECT s.sale_id, p.name AS product, s.quantity, s.total_price, s.sale_date, " +
+                    "a.full_address AS address " +
                     "FROM sales s " +
                     "JOIN products p ON s.product_id = p.product_id " +
+                    "JOIN addresses a ON s.customer_id = a.user_id AND a.is_default = TRUE " +
                     "WHERE p.seller_id=?";
             PreparedStatement ps = conn.prepareStatement(query);
             ps.setInt(1, sellerId);
@@ -78,7 +77,8 @@ public class SalesAnalyticsDialog extends JDialog {
                         rs.getString("product"),
                         rs.getInt("quantity"),
                         rs.getDouble("total_price"),
-                        rs.getTimestamp("sale_date")
+                        rs.getTimestamp("sale_date"),
+                        rs.getString("address")
                 });
             }
         } catch (Exception ex) {

@@ -8,11 +8,9 @@ public class DBConnection {
     private static final String PASS = "007036072";
 
     public static Connection getConnection() {
-        Connection conn = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            conn = DriverManager.getConnection(URL, USER, PASS);
-            return conn;
+            return DriverManager.getConnection(URL, USER, PASS);
         } catch (ClassNotFoundException e) {
             JOptionPane.showMessageDialog(null, 
                 "MySQL JDBC Driver not found!\nPlease add mysql-connector-java to your classpath.", 

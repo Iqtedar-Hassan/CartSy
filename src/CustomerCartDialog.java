@@ -1,6 +1,4 @@
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
@@ -135,98 +133,8 @@ public class CustomerCartDialog extends JDialog {
         // Decrease quantity
         decreaseQtyBtn.addActionListener(e -> updateQuantity(customerId, -1, statusLabel));
 
-        // Order selected
-        orderBtn.addActionListener(e -> {
-            int[] selectedRows = table.getSelectedRows();
-            if (selectedRows.length == 0) {
-                statusLabel.setText("Select products to order!");
-                return;
-            }
-            try (Connection conn = DBConnection.getConnection()) {
-                for (int i = selectedRows.length - 1; i >= 0; i--) {
-                    int row = selectedRows[i];
-                    int productId = (int) model.getValueAt(row, 0);
-                    int qty = (int) model.getValueAt(row, 3);
-                    double price = (double) model.getValueAt(row, 2);
-                    double total = price * qty;
-
-                    // Check stock
-                    String stockCheck = "SELECT quantity, seller_id FROM products WHERE product_id=?";
-                    PreparedStatement stockPs = conn.prepareStatement(stockCheck);
-                    stockPs.setInt(1, productId);
-                    ResultSet stockRs = stockPs.executeQuery();
-                    if (stockRs.next()) {
-                        int availableQty = stockRs.getInt("quantity");
-                        int sellerId = stockRs.getInt("seller_id");
-                        if (availableQty < qty) {
-                            statusLabel.setText("Insufficient stock for " + model.getValueAt(row, 1));
-                            continue;
-                        }
-
-                        // Insert order
-                        String orderQuery = "INSERT INTO orders (customer_id, total, payment_type) VALUES (?, ?, ?)";
-                        PreparedStatement ps = conn.prepareStatement(orderQuery, Statement.RETURN_GENERATED_KEYS);
-                        ps.setInt(1, customerId);
-                        ps.setDouble(2, total);
-                        ps.setString(3, "Cash on Delivery");
-                        ps.executeUpdate();
-                        ResultSet rs = ps.getGeneratedKeys();
-                        int orderId = 0;
-                        if (rs.next()) orderId = rs.getInt(1);
-
-                        // Insert order item
-                        String itemQuery = "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
-                        PreparedStatement itemPs = conn.prepareStatement(itemQuery);
-                        itemPs.setInt(1, orderId);
-                        itemPs.setInt(2, productId);
-                        itemPs.setInt(3, qty);
-                        itemPs.setDouble(4, price);
-                        itemPs.executeUpdate();
-
-                        // Update product quantity
-                        String updateStock = "UPDATE products SET quantity = quantity - ? WHERE product_id = ?";
-                        PreparedStatement updatePs = conn.prepareStatement(updateStock);
-                        updatePs.setInt(1, qty);
-                        updatePs.setInt(2, productId);
-                        updatePs.executeUpdate();
-
-                        // Insert into sales
-                        String salesQuery = "INSERT INTO sales (product_id, seller_id, customer_id, quantity, total_price) VALUES (?, ?, ?, ?, ?)";
-                        PreparedStatement salesPs = conn.prepareStatement(salesQuery, Statement.RETURN_GENERATED_KEYS);
-                        salesPs.setInt(1, productId);
-                        salesPs.setInt(2, sellerId);
-                        salesPs.setInt(3, customerId);
-                        salesPs.setInt(4, qty);
-                        salesPs.setDouble(5, total);
-                        salesPs.executeUpdate();
-
-                        ResultSet saleRs = salesPs.getGeneratedKeys();
-                        if (saleRs.next()) {
-                            int saleId = saleRs.getInt(1);
-                            String paymentQuery = "INSERT INTO payments (sale_id, payment_method, card_number) VALUES (?, 'CashOnDelivery', NULL)";
-                            PreparedStatement paymentPs = conn.prepareStatement(paymentQuery);
-                            paymentPs.setInt(1, saleId);
-                            paymentPs.executeUpdate();
-                        }
-
-                        // Remove from cart table
-                        String delCart = "DELETE FROM cart WHERE customer_id=? AND product_id=?";
-                        PreparedStatement delPs = conn.prepareStatement(delCart);
-                        delPs.setInt(1, customerId);
-                        delPs.setInt(2, productId);
-                        delPs.executeUpdate();
-
-                        model.removeRow(row);
-                    }
-                }
-                table.clearSelection();
-                cartTotalLabel.setText("Cart Total: PKR 0.00");
-                statusLabel.setForeground(new Color(0, 120, 0));
-                statusLabel.setText("Order placed successfully!");
-            } catch (Exception ex) {
-                statusLabel.setText("Error: " + ex.getMessage());
-            }
-        });
+        // Order selected → CHECK DEFAULT ADDRESS BEFORE ORDERING
+        orderBtn.addActionListener(e -> processOrder(customerId, statusLabel));
 
         // Bottom panel
         JPanel bottomPanel = new JPanel();
@@ -325,6 +233,144 @@ public class CustomerCartDialog extends JDialog {
             statusLabel.setForeground(new Color(0, 120, 0));
             statusLabel.setText("Quantity updated!");
             updateCartTotal();
+        } catch (Exception ex) {
+            statusLabel.setText("Error: " + ex.getMessage());
+        }
+    }
+
+    // --- NEW METHOD TO PROCESS ORDER WITH DEFAULT ADDRESS CONFIRMATION ---
+    private void processOrder(int customerId, JLabel statusLabel) {
+        try (Connection conn = DBConnection.getConnection()) {
+            // 1. Count addresses
+            String countQuery = "SELECT COUNT(*) AS count FROM addresses WHERE user_id=?";
+            PreparedStatement countPs = conn.prepareStatement(countQuery);
+            countPs.setInt(1, customerId);
+            ResultSet countRs = countPs.executeQuery();
+            int addressCount = 0;
+            if (countRs.next()) {
+                addressCount = countRs.getInt("count");
+            }
+
+            if (addressCount == 0) {
+                JOptionPane.showMessageDialog(this,
+                        "You have no addresses! Please add a default address first.",
+                        "No Address", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // 2. Check default address
+            String defaultQuery = "SELECT address_id, full_address FROM addresses WHERE user_id=? AND is_default=TRUE";
+            PreparedStatement defaultPs = conn.prepareStatement(defaultQuery);
+            defaultPs.setInt(1, customerId);
+            ResultSet defaultRs = defaultPs.executeQuery();
+
+            if (!defaultRs.next()) {
+                JOptionPane.showMessageDialog(this,
+                        "You have addresses but none is set as default! Please set a default address.",
+                        "No Default Address", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int defaultAddressId = defaultRs.getInt("address_id");
+            String fullAddress = defaultRs.getString("full_address");
+
+            // 3. Confirm with Yes/No
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "Your order will be placed to the following default address:\n" + fullAddress + "\n\nProceed?",
+                    "Confirm Default Address",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (confirm != JOptionPane.YES_OPTION) return; // Stop if user says No
+
+            // 4. Place order for selected items
+            int[] selectedRows = table.getSelectedRows();
+            if (selectedRows.length == 0) {
+                statusLabel.setText("Select products to order!");
+                return;
+            }
+
+            for (int i = selectedRows.length - 1; i >= 0; i--) {
+                int row = selectedRows[i];
+                int productId = (int) model.getValueAt(row, 0);
+                int qty = (int) model.getValueAt(row, 3);
+                double price = (double) model.getValueAt(row, 2);
+                double total = price * qty;
+
+                // Check stock
+                String stockCheck = "SELECT quantity, seller_id FROM products WHERE product_id=?";
+                PreparedStatement stockPs = conn.prepareStatement(stockCheck);
+                stockPs.setInt(1, productId);
+                ResultSet stockRs = stockPs.executeQuery();
+                if (!stockRs.next()) continue;
+                int availableQty = stockRs.getInt("quantity");
+                int sellerId = stockRs.getInt("seller_id");
+                if (availableQty < qty) {
+                    statusLabel.setText("Insufficient stock for " + model.getValueAt(row, 1));
+                    continue;
+                }
+
+                // Insert order
+                String orderQuery = "INSERT INTO orders (customer_id, address_id, total, payment_type) VALUES (?, ?, ?, ?)";
+                PreparedStatement ps = conn.prepareStatement(orderQuery, Statement.RETURN_GENERATED_KEYS);
+                ps.setInt(1, customerId);
+                ps.setInt(2, defaultAddressId);
+                ps.setDouble(3, total);
+                ps.setString(4, "Cash on Delivery");
+                ps.executeUpdate();
+                ResultSet rs = ps.getGeneratedKeys();
+                int orderId = 0;
+                if (rs.next()) orderId = rs.getInt(1);
+
+                // Insert order item
+                String itemQuery = "INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)";
+                PreparedStatement itemPs = conn.prepareStatement(itemQuery);
+                itemPs.setInt(1, orderId);
+                itemPs.setInt(2, productId);
+                itemPs.setInt(3, qty);
+                itemPs.setDouble(4, price);
+                itemPs.executeUpdate();
+
+                // Update product quantity
+                String updateStock = "UPDATE products SET quantity = quantity - ? WHERE product_id = ?";
+                PreparedStatement updatePs = conn.prepareStatement(updateStock);
+                updatePs.setInt(1, qty);
+                updatePs.setInt(2, productId);
+                updatePs.executeUpdate();
+
+                // Insert into sales
+                String salesQuery = "INSERT INTO sales (product_id, seller_id, customer_id, quantity, total_price) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement salesPs = conn.prepareStatement(salesQuery, Statement.RETURN_GENERATED_KEYS);
+                salesPs.setInt(1, productId);
+                salesPs.setInt(2, sellerId);
+                salesPs.setInt(3, customerId);
+                salesPs.setInt(4, qty);
+                salesPs.setDouble(5, total);
+                salesPs.executeUpdate();
+
+                ResultSet saleRs = salesPs.getGeneratedKeys();
+                if (saleRs.next()) {
+                    int saleId = saleRs.getInt(1);
+                    String paymentQuery = "INSERT INTO payments (sale_id, payment_method, card_number) VALUES (?, 'CashOnDelivery', NULL)";
+                    PreparedStatement paymentPs = conn.prepareStatement(paymentQuery);
+                    paymentPs.setInt(1, saleId);
+                    paymentPs.executeUpdate();
+                }
+
+                // Remove from cart table
+                String delCart = "DELETE FROM cart WHERE customer_id=? AND product_id=?";
+                PreparedStatement delPs = conn.prepareStatement(delCart);
+                delPs.setInt(1, customerId);
+                delPs.setInt(2, productId);
+                delPs.executeUpdate();
+
+                model.removeRow(row);
+            }
+
+            table.clearSelection();
+            cartTotalLabel.setText("Cart Total: PKR 0.00");
+            statusLabel.setForeground(new Color(0, 120, 0));
+            statusLabel.setText("Order placed successfully!");
+
         } catch (Exception ex) {
             statusLabel.setText("Error: " + ex.getMessage());
         }
