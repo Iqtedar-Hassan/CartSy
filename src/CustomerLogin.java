@@ -86,7 +86,7 @@ public class CustomerLogin extends JDialog {
             }
 
             // Email validation: standard email format
-            if (!email.matches("^[a-z]*[0-9]+@gmail\\.com$")) {
+            if (!email.matches("^[a-z]+[0-9]*@gmail\\.com$")) {
                 errorLabel.setText("Invalid Email!");
                 return;
             }

@@ -108,10 +108,11 @@ public class RegisterScreen extends JDialog {
                 return;
             }
 
-            if (!email.matches("^[a-z]*[0-9]+@gmail\\.com$")) {
-                errorLabel.setText("Invalid email format!");
-                return;
-            }
+            if (!email.matches("^[a-z]+[0-9]*@gmail\\.com$")) {
+    errorLabel.setText("Invalid email format!");
+    return;
+}
+
 
             try (Connection conn = DBConnection.getConnection()) {
                 if (conn != null) {

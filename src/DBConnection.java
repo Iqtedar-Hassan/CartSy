@@ -4,8 +4,8 @@ import javax.swing.JOptionPane;
 
 public class DBConnection {
     private static final String URL = "jdbc:mysql://localhost:3306/cartsydb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-    private static final String USER = "root";
-    private static final String PASS = "007036072";
+    private static final String USER = "";//your DB username
+    private static final String PASS = "";//your DB password
 
     public static Connection getConnection() {
         try {
